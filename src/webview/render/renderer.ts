@@ -24,6 +24,10 @@ export interface RendererOptions {
 
 const GRAPHVIZ_LANGUAGES = new Set(['dot', 'graphviz', 'digraph', 'gv']);
 const NON_RELATIVE_URL = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/|#)/;
+// highlight.js auto-detection tokenizes the source once per registered language and
+// runs synchronously on the webview main thread, so an unbounded unlabeled fence can
+// block rendering. Beyond this length, skip detection and show escaped plain text.
+const AUTO_HIGHLIGHT_MAXIMUM_LENGTH = 20_000;
 
 export function escapeHtml(text: string): string {
   return text
@@ -36,6 +40,9 @@ export function escapeHtml(text: string): string {
 
 export function highlightCode(source: string, language: string | undefined): string {
   if (language === undefined) {
+    if (source.length > AUTO_HIGHLIGHT_MAXIMUM_LENGTH) {
+      return escapeHtml(source);
+    }
     return highlighter.highlightAuto(source).value;
   }
   if (highlighter.getLanguage(language) !== undefined) {
@@ -90,7 +97,7 @@ export function createRenderer(options: RendererOptions): (text: string) => Rend
     if (token === undefined) {
       return '';
     }
-    const language = (token.info.trim().split(/\s+/)[0] ?? '').toLowerCase();
+    const language = (markdown.utils.unescapeAll(token.info).trim().split(/\s+/)[0] ?? '').toLowerCase();
     const kind = diagramKind(language);
     if (kind !== null) {
       return diagramPlaceholderHtml(token.content, kind);

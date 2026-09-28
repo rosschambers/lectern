@@ -6,14 +6,20 @@ export function slugify(text: string): string {
 }
 
 export function createSlugger(): (text: string) => string {
-  const counts = new Map<string, number>();
+  // github-slugger semantics: keep deduplicating against every slug already handed
+  // out, not just the base form, so a later heading that literally spells out a
+  // previously deduplicated slug (for example "Overview 1" after two "Overview"
+  // headings) still gets its own unique id instead of colliding.
+  const occurrences = new Map<string, number>();
   return function uniqueSlug(text: string): string {
-    const base = slugify(text.trim()) || EMPTY_SLUG_FALLBACK;
-    const seen = counts.get(base) ?? 0;
-    counts.set(base, seen + 1);
-    if (seen === 0) {
-      return base;
+    const original = slugify(text.trim()) || EMPTY_SLUG_FALLBACK;
+    let result = original;
+    while (occurrences.has(result)) {
+      const count = (occurrences.get(original) ?? 0) + 1;
+      occurrences.set(original, count);
+      result = `${original}-${count}`;
     }
-    return `${base}-${seen}`;
+    occurrences.set(result, 0);
+    return result;
   };
 }

@@ -21,6 +21,11 @@ describe('headings and outline', () => {
     expect(render('```bash\n# comment\n```\n\n## Real\n').outline).toEqual([{ level: 2, text: 'Real', id: 'real' }]);
   });
 
+  it('never gives two headings the same id, even when a later heading spells out a deduplicated slug', () => {
+    const { outline } = render('# Overview\n# Overview\n# Overview 1\n');
+    expect(outline.map((entry) => entry.id)).toEqual(['overview', 'overview-1', 'overview-1-1']);
+  });
+
   it('renders CRLF exactly like LF', () => {
     const source = '---\na: 1\n---\n# T\n\n- [ ] x\n\n```dot\ndigraph { a -> b }\n```\n';
     expect(render(source.replace(/\n/g, '\r\n'))).toEqual(render(source));
@@ -44,9 +49,20 @@ describe('blocks', () => {
     }
   });
 
+  it('unescapes html entities in a fence info string before choosing the diagram kind', () => {
+    expect(render('```&#x64;ot\ndigraph { a -> b }\n```\n').html).toContain('data-diagram-kind="graphviz"');
+  });
+
   it('highlights known languages and escapes unknown ones', () => {
     expect(render('```ts\nconst a = 1;\n```\n').html).toMatch(/<pre><code class="hljs language-ts">.*hljs-keyword/s);
     expect(render('```nosuchlanguage\n<b>\n```\n').html).toContain('<code class="hljs language-nosuchlanguage">&lt;b&gt;\n</code>');
+  });
+
+  it('escapes unlabeled fences beyond the auto-highlight length bound instead of auto-detecting', () => {
+    const body = '<>'.repeat(10000); // 20,000 characters; the fence content becomes 20,001 with the closing newline
+    const html = render(`\`\`\`\n${body}\n\`\`\`\n`).html;
+    expect(html).toContain(`<code class="hljs">${'&lt;&gt;'.repeat(10000)}\n</code>`);
+    expect(html).not.toContain('hljs-');
   });
 
   it('rebases relative images only', () => {

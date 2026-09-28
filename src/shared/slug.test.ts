@@ -17,4 +17,9 @@ describe('createSlugger', () => {
     expect([uniqueSlug('Overview'), uniqueSlug('Overview'), uniqueSlug('Overview')]).toEqual(['overview', 'overview-1', 'overview-2']);
     expect(uniqueSlug('!!!')).toBe('section');
   });
+
+  it('never collides a deduplicated slug with a heading that already used it literally', () => {
+    const uniqueSlug = createSlugger();
+    expect([uniqueSlug('Overview'), uniqueSlug('Overview'), uniqueSlug('Overview 1')]).toEqual(['overview', 'overview-1', 'overview-1-1']);
+  });
 });

@@ -28,6 +28,9 @@ function windowsPathToFileUrl(path: string): string {
 }
 
 function classifyFileUrl(url: URL): LinkTarget {
+  if (url.protocol !== 'file:') {
+    return { kind: 'ignored' };
+  }
   const fragment = url.hash === '' ? null : safeDecode(url.hash.slice(1));
   url.hash = '';
   if (MARKDOWN_EXTENSION.test(safeDecode(url.pathname))) {
@@ -37,7 +40,7 @@ function classifyFileUrl(url: URL): LinkTarget {
 }
 
 export function resolveLinkTarget(href: string, documentUri: string): LinkTarget {
-  const trimmed = href.trim();
+  const trimmed = href.replace(/[\t\n\r]/g, '').trim();
   if (trimmed === '') {
     return { kind: 'ignored' };
   }

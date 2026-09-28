@@ -32,4 +32,12 @@ describe('resolveLinkTarget', () => {
   it('accepts explicit file urls', () => {
     expect(resolveLinkTarget('file:///c%3A/x/y.md', windowsDocument)).toEqual({ kind: 'markdown', uri: 'file:///c%3A/x/y.md', fragment: null });
   });
+
+  it('closes the control-character scheme bypass', () => {
+    expect(resolveLinkTarget('java\tscript:alert(1)', linuxDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('java\nscript:alert(1)', linuxDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('java\rscript:alert(1)', linuxDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('vsc\tode://settings', linuxDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('com\nmand:workbench.action.quit', linuxDocument)).toEqual({ kind: 'ignored' });
+  });
 });

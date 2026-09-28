@@ -3592,6 +3592,7 @@ Open the repo's `test/fixtures` folder in VS Code (clone or download it).
    - `C:\` absolute image paths are not shown
    - with no workspace folder open, images outside the document's own folder (`../x.png`) are not shown, because the webview can only read the workspace folders and the document's folder
    - when the same file is open in two editor groups, a title-bar button in the unfocused group acts on the focused group's copy
+   - a raw-HTML element with the same `id` as a heading slug, placed earlier in the document, captures that heading's contents-rail entry and scroll target
 2. `AGENTS.md` gains a "Commands" table:
    - `pnpm run build`, `typecheck`, `test`
    - `test:integration` (with the `LECTERN_VSCODE_PATH=$(command -v code)` note for x1)

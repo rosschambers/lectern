@@ -1,0 +1,17 @@
+src/**
+test/**
+harness/**
+docs/**
+dist-test/**
+dist-harness/**
+node_modules/**
+.github/**
+**/*.map
+esbuild.mjs
+vitest.config.ts
+tsconfig*.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+AGENTS.md
+.gitignore
+.gitattributes

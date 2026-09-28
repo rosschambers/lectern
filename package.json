@@ -1,0 +1,46 @@
+{
+  "name": "lectern",
+  "displayName": "Lectern",
+  "description": "A read-only markdown reader tab: contents rail, themed Graphviz and mermaid diagrams, frontmatter and gate-tag rendering.",
+  "version": "0.0.1",
+  "publisher": "rosschambers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rosschambers/lectern"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
+    "test": "vitest run",
+    "test:integration": "node esbuild.mjs --integration && node dist-test/run.js",
+    "package": "node esbuild.mjs --production && vsce package --no-dependencies",
+    "harness": "node esbuild.mjs --harness --serve"
+  },
+  "contributes": {},
+  "dependencies": {
+    "@hpcc-js/wasm-graphviz": "^1.29.1",
+    "highlight.js": "^11.12.0",
+    "markdown-it": "^15.0.2",
+    "mermaid": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}

@@ -469,7 +469,7 @@ export function isExtensionToWebviewMessage(value: unknown): value is ExtensionT
 }
 ```
 
-**Step 4: Run it** — same command. Expected: PASS (6 tests).
+**Step 4: Run it** — same command. Expected: PASS (5 tests).
 
 **Step 5: Commit**
 
@@ -3590,6 +3590,8 @@ Open the repo's `test/fixtures` folder in VS Code (clone or download it).
 1. `README.md` lists the features, the commands and buttons, the one setting, the install steps, and the known limitations:
    - raw HTML `<img>` with relative paths is not rebased
    - `C:\` absolute image paths are not shown
+   - with no workspace folder open, images outside the document's own folder (`../x.png`) are not shown, because the webview can only read the workspace folders and the document's folder
+   - when the same file is open in two editor groups, a title-bar button in the unfocused group acts on the focused group's copy
 2. `AGENTS.md` gains a "Commands" table:
    - `pnpm run build`, `typecheck`, `test`
    - `test:integration` (with the `LECTERN_VSCODE_PATH=$(command -v code)` note for x1)

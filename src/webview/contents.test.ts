@@ -50,15 +50,60 @@ describe('mountContents', () => {
     expect(heading.scrollIntoView).toHaveBeenCalled();
   });
 
+  it('scrolls the active rail item into view only when the active index changes', () => {
+    const { rail, handle, scroller, committed } = setup();
+    const controller = mountContents({ rail, handle, scroller, defaultWidth: () => 190, onStateCommitted: committed });
+    controller.applyState({ width: 190, visible: true });
+    controller.update([{ level: 1, text: 'A', id: 'a' }, { level: 2, text: 'B', id: 'b' }]);
+    const items = Array.from(rail.querySelectorAll('li'));
+    const scrollSpies = items.map((item) => {
+      const spy = vi.fn();
+      (item as HTMLElement).scrollIntoView = spy;
+      return spy;
+    });
+    controller.refreshActive();
+    controller.refreshActive();
+    const totalCalls = scrollSpies.reduce((sum, spy) => sum + spy.mock.calls.length, 0);
+    expect(totalCalls).toBeLessThanOrEqual(1);
+  });
+
   it('commits dragged and reset widths', () => {
     const { rail, handle, scroller, committed } = setup();
     const controller = mountContents({ rail, handle, scroller, defaultWidth: () => 190, onStateCommitted: committed });
     controller.applyState({ width: 190, visible: true });
     handle.dispatchEvent(new MouseEvent('mousedown', { clientX: 200, bubbles: true }));
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 260 }));
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 260, buttons: 1 }));
     window.dispatchEvent(new MouseEvent('mouseup', { clientX: 260 }));
     expect(committed).toHaveBeenLastCalledWith({ width: 250, visible: true });
     handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(committed).toHaveBeenLastCalledWith({ width: 190, visible: true });
+  });
+
+  it('ends the drag and commits the last previewed width when the button is released outside the webview', () => {
+    const { rail, handle, scroller, committed } = setup();
+    const controller = mountContents({ rail, handle, scroller, defaultWidth: () => 190, onStateCommitted: committed });
+    controller.applyState({ width: 190, visible: true });
+    handle.dispatchEvent(new MouseEvent('mousedown', { clientX: 200, bubbles: true }));
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 230, buttons: 1 }));
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 999, buttons: 0 }));
+    expect(committed).toHaveBeenLastCalledWith({ width: 220, visible: true });
+    expect(handle.classList.contains('dragging')).toBe(false);
+    committed.mockClear();
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 400, buttons: 1 }));
+    expect(committed).not.toHaveBeenCalled();
+  });
+
+  it('ends the drag when the window loses focus', () => {
+    const { rail, handle, scroller, committed } = setup();
+    const controller = mountContents({ rail, handle, scroller, defaultWidth: () => 190, onStateCommitted: committed });
+    controller.applyState({ width: 190, visible: true });
+    handle.dispatchEvent(new MouseEvent('mousedown', { clientX: 200, bubbles: true }));
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 230, buttons: 1 }));
+    window.dispatchEvent(new Event('blur'));
+    expect(committed).toHaveBeenLastCalledWith({ width: 220, visible: true });
+    expect(handle.classList.contains('dragging')).toBe(false);
+    committed.mockClear();
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 400, buttons: 1 }));
+    expect(committed).not.toHaveBeenCalled();
   });
 });

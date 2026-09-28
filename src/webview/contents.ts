@@ -5,6 +5,7 @@ import type { OutlineEntry } from './render/outline';
 export const ACTIVE_HEADING_THRESHOLD = 40;
 const JUMP_TOLERANCE = 10;
 const MINIMUM_ENTRIES_FOR_RAIL = 2;
+const CONTENTS_WIDTH_PROPERTY = '--lectern-contents-width';
 
 /* ---------- pure helpers ---------- */
 
@@ -56,12 +57,13 @@ export function mountContents(options: ContentsOptions): ContentsController {
   const { rail, handle, scroller } = options;
   let state: ContentsState = { width: options.defaultWidth(), visible: true };
   let entries: readonly OutlineEntry[] = [];
+  let previousActiveIndex = -1;
 
   function applyLayout(): void {
     const hidden = !state.visible || entries.length < MINIMUM_ENTRIES_FOR_RAIL;
     rail.hidden = hidden;
     handle.hidden = hidden;
-    document.documentElement.style.setProperty('--lectern-contents-width', `${state.width}px`);
+    document.documentElement.style.setProperty(CONTENTS_WIDTH_PROPERTY, `${state.width}px`);
   }
 
   function headingTops(): number[] {
@@ -74,13 +76,15 @@ export function mountContents(options: ContentsOptions): ContentsController {
 
   function refreshActive(): void {
     const activeIndex = findActiveHeadingIndex(headingTops(), ACTIVE_HEADING_THRESHOLD);
+    const activeIndexChanged = activeIndex !== previousActiveIndex;
     rail.querySelectorAll('li').forEach((item, index) => {
       const isActive = index === activeIndex;
       item.classList.toggle('active', isActive);
-      if (isActive && !rail.hidden && typeof item.scrollIntoView === 'function') {
+      if (isActive && activeIndexChanged && !rail.hidden && typeof item.scrollIntoView === 'function') {
         item.scrollIntoView({ block: 'nearest' });
       }
     });
+    previousActiveIndex = activeIndex;
   }
 
   function update(outline: readonly OutlineEntry[]): void {
@@ -117,19 +121,46 @@ export function mountContents(options: ContentsOptions): ContentsController {
     downEvent.preventDefault();
     const startX = downEvent.clientX;
     const startWidth = state.width;
+    let previewedWidth = startWidth;
     handle.classList.add('dragging');
-    function onMove(moveEvent: MouseEvent): void {
-      const width = clampContentsWidth(startWidth + moveEvent.clientX - startX);
-      document.documentElement.style.setProperty('--lectern-contents-width', `${width}px`);
+
+    function computeWidth(clientX: number): number {
+      return clampContentsWidth(startWidth + clientX - startX);
     }
-    function onUp(upEvent: MouseEvent): void {
+
+    function preview(width: number): void {
+      previewedWidth = width;
+      document.documentElement.style.setProperty(CONTENTS_WIDTH_PROPERTY, `${previewedWidth}px`);
+    }
+
+    function finishDrag(): void {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('blur', onBlur);
       handle.classList.remove('dragging');
-      commit(startWidth + upEvent.clientX - startX);
+      commit(previewedWidth);
     }
+
+    function onMove(moveEvent: MouseEvent): void {
+      if (moveEvent.buttons === 0) {
+        finishDrag();
+        return;
+      }
+      preview(computeWidth(moveEvent.clientX));
+    }
+
+    function onUp(upEvent: MouseEvent): void {
+      preview(computeWidth(upEvent.clientX));
+      finishDrag();
+    }
+
+    function onBlur(): void {
+      finishDrag();
+    }
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onBlur);
   });
 
   handle.addEventListener('dblclick', () => commit(options.defaultWidth()));

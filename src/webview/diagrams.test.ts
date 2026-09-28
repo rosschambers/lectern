@@ -71,6 +71,30 @@ describe('renderDiagrams', () => {
     await renderDiagrams(root, { themeVariables: {}, isCancelled: () => true, loaders: loaders() });
     expect(root.querySelector('.diagram')?.getAttribute('data-diagram-status')).toBe('pending');
   });
+
+  it('sanitizes graphviz svg output to strip script injection', async () => {
+    const root = mount(diagramPlaceholderHtml('digraph { a }', 'graphviz'));
+    const maliciousLoaders = loaders({
+      loadGraphviz: vi.fn(async () => ({
+        layout: () => '<svg><a xlink:href="javascript:alert(1)"><text>x</text></a><script>alert(2)</script></svg>',
+      })),
+    });
+    await renderDiagrams(root, { ...context, loaders: maliciousLoaders });
+    const block = root.querySelector<HTMLElement>('.diagram');
+    expect(block?.innerHTML).not.toContain('<script');
+    expect(block?.innerHTML).not.toContain('javascript:');
+    expect(block?.innerHTML).toContain('<svg');
+  });
+
+  it('shows an error for an unrecognized diagram kind', async () => {
+    const root = mount(
+      '<div class="diagram diagram-plantuml" data-diagram-kind="plantuml" data-diagram-status="pending"><pre class="diagram-source">@startuml</pre></div>',
+    );
+    await renderDiagrams(root, { ...context, loaders: loaders() });
+    const block = root.querySelector<HTMLElement>('.diagram');
+    expect(block?.dataset.diagramStatus).toBe('failed');
+    expect(block?.textContent).toContain('Unknown diagram kind: plantuml');
+  });
 });
 
 describe('mermaidThemeVariables', () => {

@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@hpcc-js/wasm-graphviz": "^1.29.1",
+    "dompurify": "^3.4.16",
     "highlight.js": "^11.12.0",
     "markdown-it": "^15.0.2",
     "mermaid": "^12.0.0"

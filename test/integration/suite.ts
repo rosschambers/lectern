@@ -34,6 +34,11 @@ export async function run(): Promise<void> {
   assert.ok(folder, 'fixture workspace is open');
   const fixture = vscode.Uri.joinPath(folder.uri, 'basic.md');
 
+  // Start from nothing: an editor restored from an earlier session would be focused by
+  // `vscode.open` instead of the default editor being chosen.
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+  assert.equal(vscode.window.tabGroups.all.flatMap((group) => group.tabs).length, 0, 'no editors are open before the test');
+
   await vscode.commands.executeCommand('vscode.open', fixture);
   await waitFor(isLecternTab, 'basic.md opens in Lectern by default');
 

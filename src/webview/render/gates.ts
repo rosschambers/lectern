@@ -35,7 +35,7 @@ function gateRule(state: StateBlock, startLine: number, endLine: number, silent:
 
   const previousParentType = state.parentType;
   const previousLineMax = state.lineMax;
-  state.parentType = 'lectern_gate' as typeof state.parentType;
+  state.parentType = 'lectern_gate';
   state.lineMax = closeLine;
 
   const openToken = state.push(GATE_OPEN, 'div', 1);

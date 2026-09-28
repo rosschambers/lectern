@@ -69,8 +69,10 @@ digraph lectern {
 **Stack:** TypeScript (strict) and esbuild with two bundles: extension (CommonJS, Node)
 and webview (ESM, browser, code-split so diagram libraries load lazily). No UI framework,
 because the webview is one document plus one rail. Libraries: `markdown-it` 14,
-`highlight.js` 11, `mermaid` 11, `@hpcc-js/wasm-graphviz`, `vitest` + `jsdom`,
-`@vscode/test-electron`, `@vscode/vsce`. We use markdown-it rather than qv's `marked`
+`highlight.js` 11, `mermaid` 12, `@hpcc-js/wasm-graphviz` 1, `vitest` 5 + `jsdom`,
+`@vscode/test-electron` 3, `@vscode/vsce` 4, TypeScript 7 (type-check only; esbuild emits).
+Versions were verified against npm on 2026-09-28. (markdown-it is on 15 now, not 14; it
+ships its own types.) We use markdown-it rather than qv's `marked`
 because its token stream carries line maps and headings (the outline comes from tokens,
 not a regex), and because it's the VS Code ecosystem parser.
 
@@ -86,7 +88,7 @@ not a regex), and because it's the VS Code ecosystem parser.
 
 ### 2. ReaderProvider (extension host)
 
-- `resolveCustomTextEditor` sets HTML with a per-load nonce Content Security Policy: `default-src 'none'`; `script-src 'nonce-X' 'wasm-unsafe-eval'`; `style-src ${cspSource} 'unsafe-inline'`; `img-src ${cspSource} https: data:`; `font-src ${cspSource}`.
+- `resolveCustomTextEditor` sets HTML with a per-load nonce Content Security Policy: `default-src 'none'`; `script-src 'nonce-X' 'strict-dynamic' 'wasm-unsafe-eval'`; `style-src ${cspSource} 'unsafe-inline'`; `img-src ${cspSource} https: data:`; `font-src ${cspSource}`. `'strict-dynamic'` lets the nonce-trusted entry module `import()` its lazy diagram chunks without allowlisting every extension resource as a script source (the workspace is also a resource root, and a markdown file must never be able to load a workspace `.js` as script). The v0.0.1 spike proves this. The fallback is adding `${cspSource}` to `script-src`.
 - `localResourceRoots` = the extension `dist/` + every workspace folder + the document's own folder (for files opened outside a workspace).
 - After the webview posts `ready`, the provider posts `{type: "document", text, baseUri, contents: {width, visible}}`, where `baseUri` is the document folder as a webview URI.
 - Document changes are debounced to 150ms and posted as `{type: "update", text}`. Changes to other documents are ignored.
@@ -114,7 +116,7 @@ not a regex), and because it's the VS Code ecosystem parser.
 ### 5. Diagrams (webview)
 
 - Mermaid and Graphviz load only when a placeholder exists. A document without diagrams never fetches either chunk.
-- `recolorGraphvizSvg(svg)` (pure, tested against a real Graphviz output fixture) removes the background polygon and swaps default `black`/`white`/`#000000`/`#ffffff` fills and strokes for CSS-variable classes. Explicit source colors survive unchanged.
+- Graphviz recoloring is **pure CSS**, with no SVG string rewriting. CSS rules override SVG presentation attributes, so attribute selectors (`[stroke="black"]`, `[fill="black"]`, `text:not([fill])`, and the root `g.graph > polygon[fill="white"]:first-of-type` background) map Graphviz's defaults to theme variables. Colors set explicitly in the source (`color=red` becomes `stroke="red"`) are never matched, so they survive untouched. A contract test runs the real Graphviz WebAssembly in Node and asserts the output still carries the attributes those selectors target, so a Graphviz upgrade that changes its output fails loudly.
 - Mermaid runs with `securityLevel: "strict"` and theme `base`, with variables read from the computed `--vscode-*` values.
 - A body-class change (`vscode-dark`, `vscode-light`, `vscode-high-contrast`) re-renders mermaid so a theme switch never leaves stale colors.
 - Diagrams fail one at a time: an error line plus highlighted source. A chunk-load failure marks every pending diagram of that type.
@@ -155,7 +157,7 @@ not a regex), and because it's the VS Code ecosystem parser.
 - **Integration (`@vscode/test-electron`, runs on Linux here):**
   - Opening a fixture `.md` makes `lectern.reader` the active custom editor.
   - `editSource` switches the tab to the text editor, and `openInLectern` switches it back.
-  - Editing the document posts an update.
+  - The contents commands run without error. Live update while editing isn't observable from the extension test API, so it's covered by the Windows checklist (source to the side, type, and the reader updates).
 - **Visual harness:** `harness/index.html` loads the *real* webview bundle with a stub `acquireVsCodeApi` and Dark Modern, Light Modern, and High Contrast variable sets. Playwright screenshots the fixture document in each theme, so the look is proven on the real bundle before Ross installs anything.
 - **Real-artifact check on the Windows PC (Ross):** install the released `.vsix` and run through `docs/windows-checklist.md`:
   - double-click opens Lectern

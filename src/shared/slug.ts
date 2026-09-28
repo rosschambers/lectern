@@ -1,7 +1,3 @@
-// ---------------------------------------------------------------------------
-// GitHub-compatible heading slugs
-// ---------------------------------------------------------------------------
-
 const NOT_SLUG_CHARACTER = /[^\p{Letter}\p{Mark}\p{Number}\p{Connector_Punctuation} -]/gu;
 const EMPTY_SLUG_FALLBACK = 'section';
 

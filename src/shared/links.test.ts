@@ -40,4 +40,10 @@ describe('resolveLinkTarget', () => {
     expect(resolveLinkTarget('vsc\tode://settings', linuxDocument)).toEqual({ kind: 'ignored' });
     expect(resolveLinkTarget('com\nmand:workbench.action.quit', linuxDocument)).toEqual({ kind: 'ignored' });
   });
+
+  it('ignores host-bearing file links to prevent UNC credential leaks', () => {
+    expect(resolveLinkTarget('//evil.com/x.md', windowsDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('file://evil.com/x.md', windowsDocument)).toEqual({ kind: 'ignored' });
+    expect(resolveLinkTarget('\\\\evil.com\\x.md', windowsDocument)).toEqual({ kind: 'ignored' });
+  });
 });

@@ -28,7 +28,7 @@ function windowsPathToFileUrl(path: string): string {
 }
 
 function classifyFileUrl(url: URL): LinkTarget {
-  if (url.protocol !== 'file:') {
+  if (url.protocol !== 'file:' || url.host !== '') {
     return { kind: 'ignored' };
   }
   const fragment = url.hash === '' ? null : safeDecode(url.hash.slice(1));

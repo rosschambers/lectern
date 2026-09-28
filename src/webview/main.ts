@@ -32,7 +32,8 @@ async function renderSpike(text: string): Promise<void> {
   const status = document.createElement('p');
   status.textContent = `Lectern spike: ${text.length} characters`;
   root.append(status);
-  for (const match of text.matchAll(FENCE_PATTERN)) {
+  const normalizedText = text.replace(/\r\n/g, '\n');
+  for (const match of normalizedText.matchAll(FENCE_PATTERN)) {
     const block = document.createElement('div');
     block.className = 'spike-diagram';
     root.append(block);

@@ -1,0 +1,10 @@
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  font-family: var(--vscode-font-family);
+  padding: 0 20px;
+}
+
+.spike-diagram {
+  margin: 12px 0;
+}

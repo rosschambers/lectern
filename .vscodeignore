@@ -5,6 +5,8 @@ docs/**
 dist-test/**
 dist-harness/**
 node_modules/**
+.vscode-test/**
+coverage/**
 .github/**
 **/*.map
 esbuild.mjs

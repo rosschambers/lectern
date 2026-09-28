@@ -3,6 +3,7 @@
   "displayName": "Lectern",
   "description": "A read-only markdown reader tab: contents rail, themed Graphviz and mermaid diagrams, frontmatter and gate-tag rendering.",
   "version": "0.0.1",
+  "private": true,
   "publisher": "rosschambers",
   "license": "MIT",
   "repository": {

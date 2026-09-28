@@ -69,6 +69,7 @@ export function isExtensionToWebviewMessage(value: unknown): value is ExtensionT
         typeof value.imageBaseUri === 'string' &&
         isContentsState(value.contents) &&
         typeof value.defaultContentsWidth === 'number' &&
+        Number.isFinite(value.defaultContentsWidth) &&
         (value.fragment === null || typeof value.fragment === 'string')
       );
     case 'update':

@@ -32,6 +32,19 @@ describe('isExtensionToWebviewMessage', () => {
     expect(isExtensionToWebviewMessage({ type: 'document', text: 'a' })).toBe(false);
     expect(isExtensionToWebviewMessage({ type: 'update' })).toBe(false);
     expect(isExtensionToWebviewMessage({ type: 'scroll-to', fragment: 3 })).toBe(false);
+    expect(isExtensionToWebviewMessage(null)).toBe(false);
+    expect(isExtensionToWebviewMessage('update')).toBe(false);
+    expect(isExtensionToWebviewMessage({ type: 'unknown' })).toBe(false);
+    expect(
+      isExtensionToWebviewMessage({
+        type: 'document',
+        text: '# a',
+        imageBaseUri: 'https://x/',
+        contents,
+        defaultContentsWidth: Number.NaN,
+        fragment: null,
+      }),
+    ).toBe(false);
   });
 });
 

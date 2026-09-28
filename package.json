@@ -27,7 +27,32 @@
     "package": "node esbuild.mjs --production && vsce package --no-dependencies",
     "harness": "node esbuild.mjs --harness --serve"
   },
-  "contributes": {},
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "lectern.reader",
+        "displayName": "Lectern",
+        "selector": [{ "filenamePattern": "*.md" }, { "filenamePattern": "*.markdown" }],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      { "command": "lectern.editSource", "title": "Edit Source", "category": "Lectern", "icon": "$(edit)" },
+      { "command": "lectern.editSourceToSide", "title": "Open Source to the Side", "category": "Lectern", "icon": "$(split-horizontal)" },
+      { "command": "lectern.openInLectern", "title": "Open in Lectern", "category": "Lectern", "icon": "$(book)" }
+    ],
+    "menus": {
+      "editor/title": [
+        { "command": "lectern.editSource", "when": "activeCustomEditorId == lectern.reader", "group": "navigation@1" },
+        { "command": "lectern.editSourceToSide", "when": "activeCustomEditorId == lectern.reader", "group": "1_lectern@1" },
+        { "command": "lectern.openInLectern", "when": "editorLangId == markdown", "group": "navigation@1" }
+      ],
+      "commandPalette": [
+        { "command": "lectern.editSource", "when": "activeCustomEditorId == lectern.reader" },
+        { "command": "lectern.editSourceToSide", "when": "activeCustomEditorId == lectern.reader" }
+      ]
+    }
+  },
   "dependencies": {
     "@hpcc-js/wasm-graphviz": "^1.29.1",
     "highlight.js": "^11.12.0",

@@ -30,12 +30,25 @@ export class ReaderProvider implements vscode.CustomTextEditorProvider {
 
     const documentKey = document.uri.toString();
     this.trackPanel(documentKey, panel);
+
+    let pendingUpdate: ReturnType<typeof setTimeout> | undefined;
+    let changeSubscription: vscode.Disposable | undefined;
+    let messageSubscription: vscode.Disposable | undefined;
+
+    panel.onDidDispose(() => {
+      if (pendingUpdate !== undefined) {
+        clearTimeout(pendingUpdate);
+      }
+      changeSubscription?.dispose();
+      messageSubscription?.dispose();
+      this.untrackPanel(documentKey, panel);
+    });
+
     function post(message: ExtensionToWebviewMessage): void {
       void panel.webview.postMessage(message);
     }
 
-    let pendingUpdate: ReturnType<typeof setTimeout> | undefined;
-    const changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+    changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
       if (event.document.uri.toString() !== documentKey) {
         return;
       }
@@ -48,21 +61,12 @@ export class ReaderProvider implements vscode.CustomTextEditorProvider {
       }, UPDATE_DEBOUNCE_MILLISECONDS);
     });
 
-    const messageSubscription = panel.webview.onDidReceiveMessage((message: unknown) => {
+    messageSubscription = panel.webview.onDidReceiveMessage((message: unknown) => {
       if (!isWebviewToExtensionMessage(message)) {
         console.warn('lectern: ignoring unknown webview message', message);
         return;
       }
       this.handleMessage(message, document, panel, post);
-    });
-
-    panel.onDidDispose(() => {
-      if (pendingUpdate !== undefined) {
-        clearTimeout(pendingUpdate);
-      }
-      changeSubscription.dispose();
-      messageSubscription.dispose();
-      this.untrackPanel(documentKey, panel);
     });
   }
 

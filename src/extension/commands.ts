@@ -13,16 +13,34 @@ function activeResourceUri(): vscode.Uri | undefined {
   return vscode.window.activeTextEditor?.document.uri;
 }
 
-function isSameEditor(tab: vscode.Tab, previous: vscode.Tab): boolean {
+function tabResourceUri(tab: vscode.Tab): vscode.Uri | undefined {
   const input = tab.input;
-  const previousInput = previous.input;
-  if (input instanceof vscode.TabInputCustom && previousInput instanceof vscode.TabInputCustom) {
-    return input.viewType === previousInput.viewType && input.uri.toString() === previousInput.uri.toString();
+  if (input instanceof vscode.TabInputCustom || input instanceof vscode.TabInputText) {
+    return input.uri;
   }
-  if (input instanceof vscode.TabInputText && previousInput instanceof vscode.TabInputText) {
-    return input.uri.toString() === previousInput.uri.toString();
+  return undefined;
+}
+
+function groupHasResource(group: vscode.TabGroup, uri: vscode.Uri): boolean {
+  return group.tabs.some((tab) => tabResourceUri(tab)?.toString() === uri.toString());
+}
+
+function findGroupContaining(uri: vscode.Uri): vscode.TabGroup | undefined {
+  const activeGroup = vscode.window.tabGroups.activeTabGroup;
+  if (groupHasResource(activeGroup, uri)) {
+    return activeGroup;
   }
-  return false;
+  return vscode.window.tabGroups.all.find((group) => groupHasResource(group, uri));
+}
+
+function determineViewColumn(group: vscode.TabGroup | undefined, toSide: boolean): vscode.ViewColumn {
+  if (toSide) {
+    return vscode.ViewColumn.Beside;
+  }
+  if (group !== undefined) {
+    return group.viewColumn;
+  }
+  return vscode.ViewColumn.Active;
 }
 
 async function reopenWith(uriArgument: unknown, viewType: string, toSide: boolean): Promise<void> {
@@ -31,18 +49,22 @@ async function reopenWith(uriArgument: unknown, viewType: string, toSide: boolea
     void vscode.window.showInformationMessage('Lectern: no markdown file is active.');
     return;
   }
-  const group = vscode.window.tabGroups.activeTabGroup;
-  const previousTab = group.activeTab;
-  const viewColumn = toSide ? vscode.ViewColumn.Beside : group.viewColumn;
-  await vscode.commands.executeCommand('vscode.openWith', uri, viewType, { viewColumn, preview: false });
-  if (toSide || previousTab === undefined) {
-    return;
-  }
-  // Close the editor we came from if VS Code kept it next to the new one, so the
-  // group holds exactly one tab for this resource.
-  const leftover = group.tabs.find((tab) => !tab.isActive && isSameEditor(tab, previousTab));
-  if (leftover !== undefined) {
-    await vscode.window.tabGroups.close(leftover);
+  const group = findGroupContaining(uri);
+  const viewColumn = determineViewColumn(group, toSide);
+  try {
+    await vscode.commands.executeCommand('vscode.openWith', uri, viewType, { viewColumn, preview: false });
+    if (group === undefined) {
+      return;
+    }
+    // Close the editor we came from if VS Code kept it next to the new one, so the
+    // group holds exactly one tab for this resource.
+    const leftover = group.tabs.find((tab) => !tab.isActive && tabResourceUri(tab)?.toString() === uri.toString());
+    if (leftover !== undefined) {
+      await vscode.window.tabGroups.close(leftover);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void vscode.window.showErrorMessage(`Lectern: could not reopen ${uri.fsPath}: ${message}`);
   }
 }
 

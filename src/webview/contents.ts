@@ -66,6 +66,8 @@ export function mountContents(options: ContentsOptions): ContentsController {
     document.documentElement.style.setProperty(CONTENTS_WIDTH_PROPERTY, `${state.width}px`);
   }
 
+  // Known limitation: headings are resolved by id, so a raw-HTML element earlier in the
+  // document with the same id as a heading slug wins (listed in README known limitations).
   function headingTops(): number[] {
     const scrollerTop = scroller.getBoundingClientRect().top;
     return entries.map((entry) => {
